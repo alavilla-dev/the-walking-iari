@@ -105,6 +105,15 @@ Modular: cada pieza se entiende y se prueba por separado, comunicándose por int
 ### 6.10 Guardado
 - **Guardar** desde el menú (y/o puntos de guardado). Serializa: posición, PS/Nv/XP, inventario, progreso de historia, recuerdos desbloqueados, estado de los gatos. Múltiples slots en `localStorage`.
 
+## 6.11 Enfoque de construcción: Laboratorio primero, historia después
+
+El desarrollo se hace en dos fases para poder **definir y probar mecánicas** antes de comprometer la narrativa:
+
+1. **Fase A — Core systems + Laboratorio de gameplay (sandbox):** se construyen los sistemas centrales (motor, movimiento, animación, combate cuerpo a cuerpo, zombies, mochila, progresión, HUD, guardado) y un **escenario de prueba** sin historia: una sala simple donde se puede caminar, pegar, spawnear zombies, probar la mochila/curaciones, subir de nivel, guardar/cargar. Sirve para sentir y afinar la jugabilidad. Incluye toggles/atajos de debug (spawnear zombie, dar item, etc.).
+2. **Fase B — Modo historia (Cap. 1 "El comienzo"):** una vez validadas las mecánicas en el laboratorio, se construye encima el contenido narrativo del depto (intro nocturna, eventos, llamadas, brote, cliffhanger).
+
+El laboratorio queda en el proyecto como herramienta permanente de testeo de mecánicas.
+
 ## 7. Capítulo 1 — "El comienzo" (primer trozo jugable)
 
 Escenario principal: **el depto**. Bien pulido. Flujo:
