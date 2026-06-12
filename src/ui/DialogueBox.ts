@@ -13,13 +13,17 @@ export class DialogueBox {
   constructor(private scene: Phaser.Scene) {
     const W = scene.scale.width;
     const H = scene.scale.height;
-    const bg = scene.add.rectangle(0, 0, W - 16, 90, 0x101018, 0.95).setOrigin(0, 0);
-    bg.setStrokeStyle(2, 0xffffff, 0.6);
-    this.nameText = scene.add.text(10, 6, "", { color: "#ffd54a", fontSize: "13px" });
-    this.bodyText = scene.add.text(10, 26, "", {
-      color: "#ffffff", fontSize: "12px", wordWrap: { width: W - 40 },
+    // Caja a la derecha del panel de personaje (estilo referencia).
+    const boxW = W - 186;
+    const boxH = 58;
+    const bg = scene.add.graphics();
+    bg.fillStyle(0x3a2a1c, 1).fillRoundedRect(0, 0, boxW, boxH, 8);
+    bg.fillStyle(0xf6f1e3, 1).fillRoundedRect(2, 2, boxW - 4, boxH - 4, 7);
+    this.nameText = scene.add.text(10, 6, "", { color: "#7a3b1a", fontSize: "12px", fontStyle: "bold" });
+    this.bodyText = scene.add.text(10, 24, "", {
+      color: "#2a2018", fontSize: "12px", wordWrap: { width: boxW - 24 },
     });
-    this.container = scene.add.container(8, H - 98, [bg, this.nameText, this.bodyText]);
+    this.container = scene.add.container(178, H - 64, [bg, this.nameText, this.bodyText]);
     this.container.setDepth(200).setScrollFactor(0).setVisible(false);
   }
 

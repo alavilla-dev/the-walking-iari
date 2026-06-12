@@ -7,6 +7,7 @@ import { InventoryModel } from "../systems/InventoryModel";
 import { SaveSystem } from "../systems/SaveSystem";
 import { sampleDialogue } from "../data/sampleDialogue";
 import type { SaveState } from "../types";
+import type { HudInfo } from "./GameHost";
 import type { HudScene } from "./HudScene";
 
 const MAP_W = 20;
@@ -30,9 +31,13 @@ export class LabScene extends Phaser.Scene {
     super("Lab");
   }
 
+  get hudInfo(): HudInfo {
+    return { name: "Iara", gender: "F", place: "Laboratorio", subtitle: "Morón — pruebas" };
+  }
+
   create(): void {
     // HUD en paralelo + estado inicial
-    this.scene.launch("Hud", { lab: this });
+    this.scene.launch("Hud", { host: this });
     this.ps = this.progression.psMax();
     this.registerStateEvents();
 
@@ -135,7 +140,7 @@ export class LabScene extends Phaser.Scene {
     for (const obj of this.zombies.getChildren()) {
       const z = obj as Zombie;
       if (Phaser.Geom.Rectangle.Contains(hitbox, z.x, z.y)) {
-        z.takeDamage(this.player.meleeDamage);
+        z.takeDamage(this.player.meleeDamage, this.player.x, this.player.y);
       }
     }
   }

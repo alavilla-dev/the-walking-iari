@@ -2,6 +2,8 @@ import Phaser from "phaser";
 import { TILE } from "./config";
 import { BootScene } from "./scenes/BootScene";
 import { PreloadScene } from "./scenes/PreloadScene";
+import { TitleScene } from "./scenes/TitleScene";
+import { ApartmentScene } from "./scenes/ApartmentScene";
 import { LabScene } from "./scenes/LabScene";
 import { HudScene } from "./scenes/HudScene";
 
@@ -16,5 +18,5 @@ new Phaser.Game({
     default: "arcade",
     arcade: { debug: false },
   },
-  scene: [BootScene, PreloadScene, LabScene, HudScene],
+  scene: [BootScene, PreloadScene, TitleScene, ApartmentScene, LabScene, HudScene],
 });

@@ -32,9 +32,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const moving = vx !== 0 || vy !== 0;
     const speed = PLAYER_SPEED * (input.sprint ? SPRINT_MULT : 1);
 
-    // Normalizar diagonal
+    // Normalizar diagonal y suavizar (aceleración/frenado) para un andar menos rígido
     const len = Math.hypot(vx, vy) || 1;
-    this.setVelocity((vx / len) * speed, (vy / len) * speed);
+    const targetVx = moving ? (vx / len) * speed : 0;
+    const targetVy = moving ? (vy / len) * speed : 0;
+    const ease = moving ? 0.25 : 0.35; // frena un poco más rápido que acelera
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    this.setVelocity(
+      Phaser.Math.Linear(body.velocity.x, targetVx, ease),
+      Phaser.Math.Linear(body.velocity.y, targetVy, ease),
+    );
 
     // Dirección de cara (prioriza eje vertical para el sprite)
     if (vy < 0) this.facing = "up";
