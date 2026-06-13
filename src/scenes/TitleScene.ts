@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { SaveSystem } from "../systems/SaveSystem";
 import { Sfx } from "../systems/Sfx";
+import { crispText, logicalW, logicalH, crispUI } from "../ui/uikit";
 
 interface MenuItem {
   label: string;
@@ -18,19 +19,20 @@ export class TitleScene extends Phaser.Scene {
   }
 
   create(): void {
-    const W = this.scale.width;
-    const H = this.scale.height;
+    crispUI(this);
+    const W = logicalW(this);
+    const H = logicalH(this);
 
-    // Fondo oscuro (barras laterales) + arte de título (fit por altura).
+    // Fondo oscuro (bandas) + arte de título completo (contain: no recorta).
     this.cameras.main.setBackgroundColor("#140f0a");
     const bg = this.add.image(W / 2, H / 2, "title_bg");
-    const scale = H / bg.height;
+    const scale = Math.min(W / bg.width, H / bg.height);
     bg.setScale(scale);
 
     Sfx.get().startTitleDrone();
 
-    // Panel del menú (cubre el menú "horneado" del arte, con botones interactivos).
-    const px = 96, py = 196, pw = 196, ph = 150;
+    // Panel del menú (abajo-izq, sobre la madera del escritorio).
+    const px = 24, py = 302, pw = 200, ph = 150;
     const panel = this.add.graphics().setDepth(10);
     panel.fillStyle(0x000000, 0.82).fillRoundedRect(px, py, pw, ph, 6);
     panel.lineStyle(2, 0x7a2a1a, 0.9).strokeRoundedRect(px, py, pw, ph, 6);
@@ -43,12 +45,12 @@ export class TitleScene extends Phaser.Scene {
       { label: "SALIR", action: () => this.flash("¡Gracias por jugar! ❤") },
     ];
 
-    this.cursor = this.add.text(px + 12, py + 18, "▸", {
+    this.cursor = crispText(this, px + 12, py + 18, "▸", {
       color: "#e8c060", fontSize: "16px", fontStyle: "bold",
     }).setDepth(12);
 
     this.items.forEach((it, i) => {
-      const t = this.add.text(px + 30, py + 18 + i * 30, it.label, {
+      const t = crispText(this, px + 30, py + 18 + i * 30, it.label, {
         color: "#e9ddc4", fontSize: "15px", fontStyle: "bold",
       }).setDepth(12).setInteractive({ useHandCursor: true });
       t.on("pointerover", () => this.select(i));
@@ -64,7 +66,7 @@ export class TitleScene extends Phaser.Scene {
     kb.on("keydown-ENTER", () => this.confirm());
     kb.on("keydown-SPACE", () => this.confirm());
 
-    this.add.text(W / 2, H - 12, "© 2025 IARI GAMES", {
+    crispText(this, W / 2, H - 12, "© 2025 IARI GAMES", {
       color: "#8a7a60", fontSize: "9px",
     }).setOrigin(0.5, 1).setDepth(12);
 
@@ -116,7 +118,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private flash(msg: string): void {
-    const t = this.add.text(this.scale.width / 2, this.scale.height - 40, msg, {
+    const t = crispText(this, logicalW(this) / 2, logicalH(this) - 40, msg, {
       color: "#ffffff", fontSize: "12px", backgroundColor: "#000000c0",
     }).setOrigin(0.5).setPadding(6).setDepth(20);
     this.time.delayedCall(1500, () => t.destroy());

@@ -6,11 +6,12 @@ export class PreloadScene extends Phaser.Scene {
     super("Preload");
   }
   preload(): void {
-    // Pantalla de título.
-    this.load.image("title_bg", "title_bg.png");
-    // Departamento (render nuevo). El mapa de profundidad/colisión se suma cuando esté.
+    // Pantalla de título (arte "THE WALKING IARI": escritorio + polaroid).
+    this.load.image("title_bg", "title_wi.png");
+    // Departamento: render real + mapas de color (colisión rojo/negro, profundidad gris).
     this.load.image("apartment_bg", "tiles/depto/render.png");
-    // Cuando Ale pase el mapa: this.load.image("apartment_fg",...) + this.load.json("apartment_collision",...)
+    this.load.image("apartment_collision_map", "tiles/depto/collision.jpg");
+    this.load.image("apartment_depth_map", "tiles/depto/depth.jpg");
     // Retrato de Iara (HUD).
     this.load.image("portrait_iara", "portrait_iara.png");
     // Iara animada (LPC), frames 64x64: caminar (9), golpe (6), disparo (13) x 4 direcciones.

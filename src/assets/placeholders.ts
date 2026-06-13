@@ -43,6 +43,8 @@ const PAL: Palette = {
   R: 0x7a2a2a,
   Z: 0x3a4a3a, // ropa zombie
   z: 0x2a3a2a,
+  y: 0xcfe06a, // ojos enfermizos
+  r: 0x8a1f1f, // herida
   // gato
   w: 0xeeeeee,
   s: 0xcccccc,
@@ -51,23 +53,120 @@ const PAL: Palette = {
   k: 0x1a1a24, // fondo retrato
 };
 
+// Paleta propia de los personajes (no comparte letras con la del zombie).
+const CHAR_PAL: Palette = {
+  H: 0xc24a28, h: 0x8f3318, J: 0xe2703f,       // pelo colorado (Iara)
+  S: 0xf6c9a0, K: 0xdda276, f: 0xc97a4a,       // piel / sombra / peca
+  E: 0x2a2018, m: 0xa8503f, W: 0xffffff,       // ojo / boca / blanco
+  T: 0x2f7d72, t: 0x215a52,                    // top de Iara (verde agua)
+  P: 0x35506f, p: 0x2a4159,                    // jeans
+  O: 0x232026,                                 // zapatos
+  D: 0x2b2622, d: 0x1c1814, b: 0x3a2a20,       // pelo/barba de Ale
+  G: 0x586475, g: 0x434c59,                    // remera de Ale
+};
+
+// Iara: pelirroja, colitas con gomita, pecas (16x24 → 32x48 a px=2).
+const IARA = [
+  "................",
+  ".....JHHHJ......",
+  "...HHHHHHHHH....",
+  "..HHHHHHHHHHH...",
+  "..HHHSSSSSHHH...",
+  ".JHHSSESSESSHHJ.",
+  "HHhHSfSSSSfSHhHH",
+  "HHhHSSSmmSSSHhHH",
+  ".Hh.SSSSSSSS.hH.",
+  ".hh..KSSSSK..hh.",
+  ".hh.TTTTTTTT.hh.",
+  "...TTTTTTTTTT...",
+  "..STTTTTTTTTTS..",
+  "..STTTTTTTTTTS..",
+  "...TTTTTTTTTT...",
+  "...PPPPPPPPPP...",
+  "...PPPPPPPPPP...",
+  "...PPPP..PPPP...",
+  "...pppp..pppp...",
+  "...OOOO..OOOO...",
+  "..OOOOO..OOOOO..",
+  "................",
+  "................",
+  "................",
+];
+
+// Ale: morocho con barba, peinado al costado (librito) (16x24 → 32x48).
+const ALE = [
+  "................",
+  "....DDDDDD......",
+  "...DDddDDDD.....",
+  "..DDDdDDDDDD....",
+  "..DDDSSSSDDD....",
+  "..DDSSSSSSDD....",
+  "..DSSESSESSD....",
+  "..DSSSSSSSSD....",
+  "...bSSSSSSb.....",
+  "...bbSmmSbb.....",
+  "....bbbbbb......",
+  ".....bbbb.......",
+  ".....SSSS.......",
+  "..GGGGGGGGGGGG..",
+  ".SGGGGGGGGGGGGS.",
+  ".SGGGGGGGGGGGGS.",
+  "..GGGGGGGGGGGG..",
+  "..PPPPPPPPPPPP..",
+  "..PPPPP..PPPPP..",
+  "..PPPPP..PPPPP..",
+  "..pppp....pppp..",
+  "..OOOO....OOOO..",
+  ".OOOOO....OOOOO.",
+  "................",
+];
+
+// Íconos de armas para el HUD (16x12 → 32x24 a px=2).
+const ICON_PAL: Palette = {
+  M: 0xcfd2d8, n: 0x80848c, k: 0x26262b, w: 0x7a4a2a, y: 0xe0b54a,
+};
+const IC_KNIFE = [
+  "................", "................", "................",
+  "............MM..", ".kwwwwMMMMMMMM..", ".kwwwwMMMMMMM...",
+  ".kwwwwMMMMM.....", "................", "................",
+  "................", "................", "................",
+];
+const IC_PISTOL = [
+  "................", "................", "................",
+  "...MMMMMMMM.....", "...MnnnnnnM.....", "...Mk....MM.....",
+  "...kk...........", "..kkk...........", "..kk............",
+  "................", "................", "................",
+];
+const IC_SHOTGUN = [
+  "................", "................", "................",
+  "................", "..MMMMMMMMMMMM..", "..nMMMMMMMMMMn..",
+  "www.k..........", "www............", "................",
+  "................", "................", "................",
+];
+const IC_BAT = [
+  "................", "................", "................",
+  ".........MMMM...", "......MMMMMMMM..", ".wwwwwMMMMMMMM..",
+  "......MMMMMMMM..", ".........MMMM...", "................",
+  "................", "................", "................",
+];
+
 const ZOMBIE = [
   "................",
-  "................",
-  ".....dggd.......",
-  "....dggggd......",
-  "....gggggg......",
-  "....gRggRg......",
-  "....gggggg......",
-  ".....g gg.......",
-  "...ZZZZZZZZ.....",
-  "..gZZZZZZZZg....",
+  ".....dggggd.....",
+  ".....gggggg.....",
+  ".....gyggyg.....",
+  ".....gggggg.....",
+  "......gddg......",
+  "....ZZZZZZZZ....",
+  "..gZZZrZZZZg....",
   "..gZZZZZZZZg....",
   "...ZZZZZZZZ.....",
   "...zzzzzzzz.....",
   "...zzz..zzz.....",
-  "...zz....zz.....",
+  "...OOO..OOO.....",
+  "...OOO..OOO.....",
   "...dd....dd.....",
+  "................",
 ];
 
 export function createPlaceholderTextures(scene: Phaser.Scene): void {
@@ -99,6 +198,58 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   g.clear();
   drawPixels(g, ZOMBIE, PAL, 2);
   g.generateTexture("zombie", 32, 32);
+
+  // --- Personajes por código (Iara / Ale), 16x24 a px=2 → 32x48 ---
+  g.clear();
+  drawPixels(g, IARA, CHAR_PAL, 2);
+  g.generateTexture("iara_code", 32, 48);
+  g.clear();
+  drawPixels(g, ALE, CHAR_PAL, 2);
+  g.generateTexture("ale_code", 32, 48);
+
+  // --- Íconos de armas (32x24) ---
+  for (const [key, rows] of [
+    ["ic_knife", IC_KNIFE], ["ic_pistol", IC_PISTOL],
+    ["ic_shotgun", IC_SHOTGUN], ["ic_bat", IC_BAT],
+  ] as const) {
+    g.clear();
+    drawPixels(g, rows, ICON_PAL, 2);
+    g.generateTexture(key, 32, 24);
+  }
+
+  // --- Bala (estela horizontal; se rota según el ángulo de disparo) ---
+  g.clear();
+  g.fillStyle(0xffe39a, 1).fillRect(0, 0, 8, 3);   // halo cálido
+  g.fillStyle(0xfff4d0, 1).fillRect(0, 1, 8, 1);   // núcleo brillante
+  g.generateTexture("bullet", 8, 3);
+
+  // --- Fogonazo (estrella corta del disparo) ---
+  g.clear();
+  g.fillStyle(0xffd98a, 0.95).fillCircle(8, 8, 7);
+  g.fillStyle(0xfff3cf, 1).fillCircle(8, 8, 4);
+  g.generateTexture("muzzle", 16, 16);
+
+  // --- Partícula de sangre ---
+  g.clear();
+  g.fillStyle(0x9a1414, 1).fillRect(0, 0, 4, 4);
+  g.fillStyle(0xc62828, 1).fillRect(0, 0, 2, 2);
+  g.generateTexture("blood", 4, 4);
+
+  // --- Mancha de sangre (decal del piso) ---
+  g.clear();
+  g.fillStyle(0x5e0d0d, 1);
+  g.fillCircle(10, 10, 7); g.fillCircle(5, 8, 4); g.fillCircle(15, 12, 4);
+  g.fillCircle(8, 15, 3); g.fillCircle(14, 5, 3);
+  g.fillStyle(0x7a1414, 1).fillCircle(10, 10, 4);
+  g.generateTexture("stain", 20, 20);
+
+  // --- Caja de munición ---
+  g.clear();
+  g.fillStyle(0x4a5a32, 1).fillRect(2, 4, 20, 12);
+  g.fillStyle(0x3a4726, 1).fillRect(2, 4, 20, 2);
+  g.fillStyle(0xe0b54a, 1).fillRect(5, 8, 14, 3);
+  g.fillStyle(0x2a3320, 1).fillRect(2, 14, 20, 2);
+  g.generateTexture("ammo_box", 24, 18);
 
   // Los gatos (Marfil/Venus) ahora usan sprites reales (Elthen), cargados en Preload.
   // Iara y su retrato usan los sprites reales (public/...).

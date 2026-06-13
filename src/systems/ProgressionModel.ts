@@ -3,6 +3,9 @@ import {
   PS_PER_LEVEL,
   XP_PER_LEVEL_FACTOR,
   SKILL_POINTS_PER_LEVEL,
+  AIM_BASE,
+  AIM_GROWTH,
+  AIM_MAX,
 } from "../config";
 import type { ProgressionState } from "../types";
 
@@ -22,6 +25,11 @@ export class ProgressionModel {
 
   psMax(): number {
     return PLAYER_BASE_PS + (this.level - 1) * PS_PER_LEVEL;
+  }
+
+  /** Puntería 0..1 según el nivel (arranca mala, mejora con cada nivel). */
+  aim(): number {
+    return Math.min(AIM_MAX, AIM_BASE + (this.level - 1) * AIM_GROWTH);
   }
 
   addXp(amount: number): XpResult {

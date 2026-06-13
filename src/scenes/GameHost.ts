@@ -10,6 +10,19 @@ export interface HudInfo {
   place: string;
   /** Subtítulo del lugar (línea 2). */
   subtitle: string;
+  /** Objetivo actual que muestra el Diario (línea de misión). */
+  objective?: string;
+}
+
+/** Arma equipada que muestra el HUD (panel inferior derecho). */
+export interface WeaponHud {
+  id: string;
+  name: string;
+  icon: string;
+  kind: "melee" | "ranged";
+  mag?: number;     // balas en el cargador (sólo de fuego)
+  reserve?: number; // munición de reserva
+  reloading?: boolean;
 }
 
 /**
@@ -21,4 +34,12 @@ export type GameHost = Phaser.Scene & {
   inventory: InventoryModel;
   ps: number;
   hudInfo: HudInfo;
+  /** Persiste el estado actual al slot dado (lo invoca el menú "Guardar" del HUD). */
+  saveGame(slot?: number): void;
+  /** Arma equipada (si la escena tiene combate); el HUD la muestra a la derecha. */
+  weaponInfo?(): WeaponHud | null;
+  /** Equipa un arma por id (desde la Mochila). Devuelve true si pudo. */
+  equipWeapon?(id: string): boolean;
+  /** Usa un consumible por id (botiquín, etc.) desde la Mochila. */
+  useItem?(id: string): void;
 };

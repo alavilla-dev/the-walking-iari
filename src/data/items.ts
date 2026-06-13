@@ -15,6 +15,20 @@ export const ITEM_DEFS: Record<string, ItemDef> = {
     description: "Contundente y confiable.",
     stackable: false,
   },
+  pistol: {
+    id: "pistol",
+    name: "Pistola",
+    type: "weapon",
+    description: "9mm. Precisa si tenés pulso firme.",
+    stackable: false,
+  },
+  shotgun: {
+    id: "shotgun",
+    name: "Escopeta",
+    type: "weapon",
+    description: "De cerca, no perdona.",
+    stackable: false,
+  },
   medkit: {
     id: "medkit",
     name: "Botiquín",

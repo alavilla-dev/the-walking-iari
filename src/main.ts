@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { TILE } from "./config";
+import { LOGICAL_W, LOGICAL_H, RENDER_SCALE } from "./config";
 import { BootScene } from "./scenes/BootScene";
 import { PreloadScene } from "./scenes/PreloadScene";
 import { TitleScene } from "./scenes/TitleScene";
@@ -10,8 +10,9 @@ import { HudScene } from "./scenes/HudScene";
 new Phaser.Game({
   type: Phaser.AUTO,
   parent: "game",
-  width: 20 * TILE,
-  height: 15 * TILE,
+  // Canvas a 2x la resolución lógica (supersampling para HUD/texto nítido).
+  width: LOGICAL_W * RENDER_SCALE,
+  height: LOGICAL_H * RENDER_SCALE,
   pixelArt: true,
   roundPixels: true,
   backgroundColor: "#0d0d12",

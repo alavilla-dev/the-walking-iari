@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { DialogueRunner } from "../systems/DialogueRunner";
+import { crispText, logicalW, logicalH } from "./uikit";
 import type { DialogueScript } from "../types";
 
 export class DialogueBox {
@@ -11,20 +12,22 @@ export class DialogueBox {
   private onCloseCb?: () => void;
 
   constructor(private scene: Phaser.Scene) {
-    const W = scene.scale.width;
-    const H = scene.scale.height;
-    // Caja a la derecha del panel de personaje (estilo referencia).
-    const boxW = W - 186;
-    const boxH = 58;
+    const W = logicalW(scene);
+    const H = logicalH(scene);
+    // Caja oscura a la derecha del panel de personaje (paleta del HUD).
+    const boxW = W - 192;
+    const boxH = 60;
     const bg = scene.add.graphics();
-    bg.fillStyle(0x3a2a1c, 1).fillRoundedRect(0, 0, boxW, boxH, 8);
-    bg.fillStyle(0xf6f1e3, 1).fillRoundedRect(2, 2, boxW - 4, boxH - 4, 7);
-    this.nameText = scene.add.text(10, 6, "", { color: "#7a3b1a", fontSize: "12px", fontStyle: "bold" });
-    this.bodyText = scene.add.text(10, 24, "", {
-      color: "#2a2018", fontSize: "12px", wordWrap: { width: boxW - 24 },
+    bg.fillStyle(0x000000, 0.38).fillRoundedRect(2, 3, boxW, boxH, 6);     // sombra
+    bg.fillStyle(0x17130e, 0.92).fillRoundedRect(0, 0, boxW, boxH, 6);     // relleno
+    bg.lineStyle(1, 0x6b4f2a, 1).strokeRoundedRect(0.5, 0.5, boxW - 1, boxH - 1, 6);
+    bg.fillStyle(0xc9904a, 0.9).fillRect(10, 22, boxW - 20, 1);            // separador ámbar
+    this.nameText = crispText(scene, 12, 7, "", { color: "#e8b45a", fontSize: "12px", fontStyle: "bold" });
+    this.bodyText = crispText(scene, 12, 27, "", {
+      color: "#efe6d4", fontSize: "12px", wordWrap: { width: boxW - 24 },
     });
-    this.container = scene.add.container(178, H - 64, [bg, this.nameText, this.bodyText]);
-    this.container.setDepth(200).setScrollFactor(0).setVisible(false);
+    this.container = scene.add.container(184, H - 66, [bg, this.nameText, this.bodyText]);
+    this.container.setDepth(200).setVisible(false);
   }
 
   get visible(): boolean {
@@ -63,8 +66,7 @@ export class DialogueBox {
     this.optionTexts = [];
     if (node.options) {
       node.options.forEach((opt, i) => {
-        const t = this.scene.add
-          .text(20, 56 + i * 16, `▶ ${opt.text}`, { color: "#9fd3ff", fontSize: "12px" })
+        const t = crispText(this.scene, 22, 58 + i * 16, `▶ ${opt.text}`, { color: "#e8b45a", fontSize: "12px" })
           .setInteractive({ useHandCursor: true });
         t.on("pointerdown", () => this.selectOption(i));
         this.container.add(t);
