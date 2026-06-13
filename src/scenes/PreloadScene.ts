@@ -6,36 +6,50 @@ export class PreloadScene extends Phaser.Scene {
     super("Preload");
   }
   preload(): void {
-    // Arte de la pantalla de título (recorte del diseño image.png).
+    // Pantalla de título.
     this.load.image("title_bg", "title_bg.png");
-    // Departamento Casullo 856: render + capa de profundidad + colisiones (de los mapas de Ale).
+    // Departamento Casullo 856: render + capa de profundidad + colisiones (mapas de Ale).
     this.load.image("apartment_bg", "tiles/casullo856/render.png");
     this.load.image("apartment_fg", "tiles/casullo856/fg.png");
     this.load.json("apartment_collision", "tiles/casullo856/collision.json");
-    // Sprites reales de Iara (recortados de la hoja de personajes, 4 direcciones).
-    this.load.image("player_down", "iara_down.png");
-    this.load.image("player_up", "iara_up.png");
-    this.load.image("player_left", "iara_left.png");
-    this.load.image("player_right", "iara_right.png");
-    // Retrato real de Iara para el HUD.
+    // Retrato de Iara (HUD).
     this.load.image("portrait_iara", "portrait_iara.png");
-    // Pisos del tileset LimeZu (recortes 16x16).
-    this.load.image("floor_wood", "tiles/floor_wood.png");
-    this.load.image("floor_tile", "tiles/floor_tile.png");
-    // Muebles del depto (recortados del tileset LimeZu).
-    for (const f of ["bed", "sofa", "table", "chair", "counter", "tv",
-      "plant", "plant2", "rug", "window", "door", "nightstand"]) {
-      this.load.image(`f_${f}`, `tiles/f/${f}.png`);
-    }
-    // Cuando tengamos audio real: this.load.audio(...) acá.
+    // Iara animada (LPC), frames 64x64: caminar (9), golpe (6), disparo (13) x 4 direcciones.
+    this.load.spritesheet("iara_walk", "tiles/iara_walk.png", { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet("iara_slash", "tiles/iara_slash.png", { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet("iara_shoot", "tiles/iara_shoot.png", { frameWidth: 64, frameHeight: 64 });
   }
+
   create(): void {
-    createPlaceholderTextures(this); // Iara, zombie, gato, retrato (sprites de personajes)
-    // Atajo de desarrollo: #apt salta al depto, #lab al laboratorio.
+    createPlaceholderTextures(this); // zombie, gato (placeholders aún en uso)
+    this.createIaraAnims();
+
     const hash = typeof window !== "undefined" ? window.location.hash : "";
     if (hash === "#apt") return void this.scene.start("Apartment");
     if (hash === "#lab") return void this.scene.start("Lab");
-    // Flujo normal: Título → (Nueva Partida) → Departamento (Cap. 1).
     this.scene.start("Title");
+  }
+
+  /** Animaciones de Iara (LPC: filas up/left/down/right). */
+  private createIaraAnims(): void {
+    const order = ["up", "left", "down", "right"];
+    // Caminar (9 frames/fila, usamos 1..8).
+    order.forEach((dir, r) => this.anims.create({
+      key: `iara-walk-${dir}`,
+      frames: this.anims.generateFrameNumbers("iara_walk", { start: r * 9 + 1, end: r * 9 + 8 }),
+      frameRate: 11, repeat: -1,
+    }));
+    // Golpe (6 frames/fila).
+    order.forEach((dir, r) => this.anims.create({
+      key: `iara-slash-${dir}`,
+      frames: this.anims.generateFrameNumbers("iara_slash", { start: r * 6, end: r * 6 + 5 }),
+      frameRate: 14, repeat: 0,
+    }));
+    // Disparo (13 frames/fila) — para la fase de armas.
+    order.forEach((dir, r) => this.anims.create({
+      key: `iara-shoot-${dir}`,
+      frames: this.anims.generateFrameNumbers("iara_shoot", { start: r * 13, end: r * 13 + 12 }),
+      frameRate: 16, repeat: 0,
+    }));
   }
 }

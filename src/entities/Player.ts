@@ -5,28 +5,29 @@ import {
 } from "../config";
 import type { Direction } from "../types";
 
+// Frame de reposo (idle) por dirección en la hoja LPC (9 cols x 4 filas).
+const IDLE: Record<Direction, number> = { up: 0, left: 9, down: 18, right: 27 };
+
 export class Player extends Phaser.Physics.Arcade.Sprite {
   facing: Direction = "down";
-  private bobTween?: Phaser.Tweens.Tween;
   private lastAttack = -Infinity;
+  private attacking = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, "player_down");
+    super(scene, x, y, "iara_walk", IDLE.down);
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setCollideWorldBounds(true);
-    // Cuerpo chico a la altura de los pies (el sprite real mide ~38x64).
+    // Cuerpo chico a la altura de los pies (frame LPC 64x64).
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setSize(18, 14);
-    body.setOffset(10, 48);
+    body.setSize(16, 12);
+    body.setOffset(24, 48);
   }
 
-  /** keys: objeto con estados booleanos de input. */
   handleInput(input: {
     up: boolean; down: boolean; left: boolean; right: boolean; sprint: boolean;
   }): void {
-    let vx = 0;
-    let vy = 0;
+    let vx = 0, vy = 0;
     if (input.left) vx -= 1;
     if (input.right) vx += 1;
     if (input.up) vy -= 1;
@@ -35,40 +36,32 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const moving = vx !== 0 || vy !== 0;
     const speed = PLAYER_SPEED * (input.sprint ? SPRINT_MULT : 1);
 
-    // Normalizar diagonal y suavizar (aceleración/frenado) para un andar menos rígido
+    // Normalizar diagonal y suavizar (aceleración/frenado).
     const len = Math.hypot(vx, vy) || 1;
     const targetVx = moving ? (vx / len) * speed : 0;
     const targetVy = moving ? (vy / len) * speed : 0;
-    const ease = moving ? 0.25 : 0.35; // frena un poco más rápido que acelera
+    const ease = moving ? 0.25 : 0.35;
     const body = this.body as Phaser.Physics.Arcade.Body;
     this.setVelocity(
       Phaser.Math.Linear(body.velocity.x, targetVx, ease),
       Phaser.Math.Linear(body.velocity.y, targetVy, ease),
     );
 
-    // Dirección de cara (prioriza eje vertical para el sprite)
+    // Dirección de cara (prioriza eje vertical).
     if (vy < 0) this.facing = "up";
     else if (vy > 0) this.facing = "down";
     else if (vx < 0) this.facing = "left";
     else if (vx > 0) this.facing = "right";
-    if (moving) this.setTexture(`player_${this.facing}`);
 
-    this.updateBob(moving);
-  }
+    // Mientras ataca, no se pisa la animación de golpe.
+    if (this.attacking) return;
 
-  private updateBob(moving: boolean): void {
-    if (moving && !this.bobTween?.isPlaying()) {
-      this.bobTween = this.scene.tweens.add({
-        targets: this,
-        scaleY: 0.92,
-        duration: 120,
-        yoyo: true,
-        repeat: -1,
-      });
-    } else if (!moving && this.bobTween) {
-      this.bobTween.stop();
-      this.setScale(1);
-      this.bobTween = undefined;
+    // Animación: camina si se mueve, si no queda en reposo.
+    if (moving) {
+      this.anims.play(`iara-walk-${this.facing}`, true);
+    } else {
+      this.anims.stop();
+      this.setFrame(IDLE[this.facing]);
     }
   }
 
@@ -80,15 +73,21 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   attack(time: number): Phaser.Geom.Rectangle | null {
     if (!this.canAttack(time)) return null;
     this.lastAttack = time;
+
+    // Animación de golpe (slash); al terminar vuelve al reposo/caminar.
+    this.attacking = true;
+    this.anims.play(`iara-slash-${this.facing}`, true);
+    this.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+      this.attacking = false;
+      this.setFrame(IDLE[this.facing]);
+    });
+
     const r = MELEE_RANGE;
     let cx = this.x, cy = this.y;
     if (this.facing === "up") cy -= r;
     else if (this.facing === "down") cy += r;
     else if (this.facing === "left") cx -= r;
     else cx += r;
-    // Feedback visual
-    const fx = this.scene.add.circle(cx, cy, 10, 0xffffff, 0.5).setDepth(50);
-    this.scene.tweens.add({ targets: fx, alpha: 0, duration: 150, onComplete: () => fx.destroy() });
     return new Phaser.Geom.Rectangle(cx - r / 2, cy - r / 2, r, r);
   }
 
