@@ -8,10 +8,9 @@ export class PreloadScene extends Phaser.Scene {
   preload(): void {
     // Pantalla de título.
     this.load.image("title_bg", "title_bg.png");
-    // Departamento Casullo 856: render + capa de profundidad + colisiones (mapas de Ale).
-    this.load.image("apartment_bg", "tiles/casullo856/render.png");
-    this.load.image("apartment_fg", "tiles/casullo856/fg.png");
-    this.load.json("apartment_collision", "tiles/casullo856/collision.json");
+    // Departamento (render nuevo). El mapa de profundidad/colisión se suma cuando esté.
+    this.load.image("apartment_bg", "tiles/depto/render.png");
+    // Cuando Ale pase el mapa: this.load.image("apartment_fg",...) + this.load.json("apartment_collision",...)
     // Retrato de Iara (HUD).
     this.load.image("portrait_iara", "portrait_iara.png");
     // Iara animada (LPC), frames 64x64: caminar (9), golpe (6), disparo (13) x 4 direcciones.
