@@ -17,11 +17,15 @@ export class PreloadScene extends Phaser.Scene {
     this.load.spritesheet("iara_walk", "tiles/iara_walk.png", { frameWidth: 64, frameHeight: 64 });
     this.load.spritesheet("iara_slash", "tiles/iara_slash.png", { frameWidth: 64, frameHeight: 64 });
     this.load.spritesheet("iara_shoot", "tiles/iara_shoot.png", { frameWidth: 64, frameHeight: 64 });
+    // Gatos (Elthen): Marfil blanco + Venus negro, frames 32x32.
+    this.load.spritesheet("cat_marfil", "tiles/cat_marfil.png", { frameWidth: 32, frameHeight: 32 });
+    this.load.spritesheet("cat_venus", "tiles/cat_venus.png", { frameWidth: 32, frameHeight: 32 });
   }
 
   create(): void {
-    createPlaceholderTextures(this); // zombie, gato (placeholders aún en uso)
+    createPlaceholderTextures(this); // zombie (placeholder aún en uso)
     this.createIaraAnims();
+    this.createCatAnims();
 
     const hash = typeof window !== "undefined" ? window.location.hash : "";
     if (hash === "#apt") return void this.scene.start("Apartment");
@@ -50,5 +54,13 @@ export class PreloadScene extends Phaser.Scene {
       frames: this.anims.generateFrameNumbers("iara_shoot", { start: r * 13, end: r * 13 + 12 }),
       frameRate: 16, repeat: 0,
     }));
+  }
+
+  /** Animaciones de los gatos (Elthen): sentarse (idle) y caminar. */
+  private createCatAnims(): void {
+    for (const k of ["cat_marfil", "cat_venus"]) {
+      this.anims.create({ key: `${k}-idle`, frames: this.anims.generateFrameNumbers(k, { start: 0, end: 3 }), frameRate: 4, repeat: -1 });
+      this.anims.create({ key: `${k}-walk`, frames: this.anims.generateFrameNumbers(k, { start: 32, end: 37 }), frameRate: 10, repeat: -1 });
+    }
   }
 }

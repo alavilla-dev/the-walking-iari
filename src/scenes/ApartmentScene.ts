@@ -166,6 +166,10 @@ export class ApartmentScene extends Phaser.Scene {
     const hud = this.scene.get("Hud") as HudScene;
     if (hud.dialogue.visible) { hud.dialogue.advance(); return; }
     if (this.cutscene.active) return;
+    // Gato cerca → maúlla (ESPACIO/E).
+    for (const c of this.cats) {
+      if (Phaser.Math.Distance.Between(this.player.x, this.player.y, c.x, c.y) < 80) { c.meowNow(); return; }
+    }
     let best: Interactable | null = null; let bestD = Infinity;
     for (const it of this.interactables) {
       const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, it.x, it.y);
@@ -200,9 +204,8 @@ export class ApartmentScene extends Phaser.Scene {
   update(time: number): void {
     // Profundidad de Iara según la Y de sus pies (y-sorting con la capa frontal).
     this.player.setDepth(this.player.y + this.player.displayHeight * 0.42);
-    // Gatos (deambulan y maúllan al acercarse).
-    const pv = new Phaser.Math.Vector2(this.player.x, this.player.y);
-    for (const c of this.cats) c.tick(time, pv);
+    // Gatos (deambulan; maúllan con ESPACIO al estar cerca).
+    for (const c of this.cats) c.tick(time);
     if (this.cutscene.active) return;
     const cursors = this.input.keyboard!.createCursorKeys();
     this.player.handleInput({

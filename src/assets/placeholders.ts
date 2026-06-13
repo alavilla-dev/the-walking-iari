@@ -70,19 +70,6 @@ const ZOMBIE = [
   "...dd....dd.....",
 ];
 
-const CAT = [
-  "w........w..",
-  "ww......ww..",
-  "wwwwwwwwww..",
-  "weewwwweew..",
-  "wwwwwwwwww..",
-  "wwwwnnwwww..",
-  "wwwwwwwwww..",
-  "swwwwwwwws..",
-  ".wwwwwwww...",
-  ".s......s...",
-];
-
 export function createPlaceholderTextures(scene: Phaser.Scene): void {
   const g = scene.make.graphics({ x: 0, y: 0 }, false);
 
@@ -113,16 +100,8 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   drawPixels(g, ZOMBIE, PAL, 2);
   g.generateTexture("zombie", 32, 32);
 
-  // --- Gatos: Marfil (blanco) y Venus (negro, ojos verdes) ---
-  g.clear();
-  drawPixels(g, CAT, PAL, 2);
-  g.generateTexture("cat_marfil", 24, 24);
-  const venusPal: Palette = { w: 0x2b2b30, s: 0x17171b, e: 0x8ad04a, n: 0xff9fb0 };
-  g.clear();
-  drawPixels(g, CAT, venusPal, 2);
-  g.generateTexture("cat_venus", 24, 24);
-
-  // Iara y su retrato ahora usan los sprites reales (public/iara_*.png, portrait_iara.png).
+  // Los gatos (Marfil/Venus) ahora usan sprites reales (Elthen), cargados en Preload.
+  // Iara y su retrato usan los sprites reales (public/...).
 
   g.destroy();
 }

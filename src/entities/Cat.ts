@@ -13,25 +13,27 @@ export class Cat extends Phaser.Physics.Arcade.Sprite {
   private frenetic: boolean;
   private highMeow: boolean;
   private speed: number;
+  private catKey: string;
   private target: { x: number; y: number } | null = null;
   private nextDecision = 0;
-  private lastMeow = -Infinity;
 
   constructor(scene: Phaser.Scene, x: number, y: number, texture: string, opts: CatOpts) {
     super(scene, x, y, texture);
     scene.add.existing(this);
     scene.physics.add.existing(this);
-    this.setScale(1.2);
+    this.catKey = texture;
+    this.setScale(1.3);
+    this.anims.play(`${texture}-idle`, true);
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setSize(14, 9);
-    body.setOffset(5, 13);
+    body.setSize(13, 8);
+    body.setOffset(10, 18);
     this.homeX = x; this.homeY = y;
     this.frenetic = opts.frenetic;
     this.highMeow = opts.high;
     this.speed = opts.frenetic ? 55 : 32;
   }
 
-  tick(time: number, player: Phaser.Math.Vector2): void {
+  tick(time: number): void {
     this.setDepth(this.y);
 
     // Decidir si camina a un nuevo punto o se queda quieto.
@@ -52,6 +54,7 @@ export class Cat extends Phaser.Physics.Arcade.Sprite {
     }
 
     // Movimiento hacia el objetivo.
+    let moving = false;
     if (this.target) {
       const d = Phaser.Math.Distance.Between(this.x, this.y, this.target.x, this.target.y);
       if (d < 8) {
@@ -61,18 +64,18 @@ export class Cat extends Phaser.Physics.Arcade.Sprite {
         this.scene.physics.moveTo(this, this.target.x, this.target.y, this.speed);
         const body = this.body as Phaser.Physics.Arcade.Body;
         if (Math.abs(body.velocity.x) > 4) this.setFlipX(body.velocity.x < 0);
+        moving = true;
       }
     } else {
       this.setVelocity(0, 0);
     }
+    this.anims.play(`${this.catKey}-${moving ? "walk" : "idle"}`, true);
+  }
 
-    // Maullar al acercarse el jugador.
-    const dp = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
-    if (dp < 72 && time - this.lastMeow > 2600) {
-      this.lastMeow = time;
-      Sfx.get().meow(this.highMeow);
-      this.showMeow();
-    }
+  /** Maúlla (lo dispara el jugador con ESPACIO al estar cerca). */
+  meowNow(): void {
+    Sfx.get().meow(this.highMeow);
+    this.showMeow();
   }
 
   private showMeow(): void {
