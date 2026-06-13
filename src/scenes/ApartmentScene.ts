@@ -73,6 +73,11 @@ export class ApartmentScene extends Phaser.Scene {
     this.player.setScale(this.S * 2.6);
     this.physics.add.collider(this.player, this.walls);
 
+    // Zoom + cámara que sigue a Iara (el depto se va "auto-descubriendo").
+    this.cameras.main.setBounds(this.ox, this.oy, BG_W * this.S, BG_H * this.S);
+    this.cameras.main.setZoom(2.2);
+    this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+
     this.inventory.add("photo_pareja", 1);
     this.inventory.add("llave_depto", 1);
 
@@ -154,28 +159,19 @@ export class ApartmentScene extends Phaser.Scene {
 
   // ---------- Intro ----------
 
-  private controlHint(): void {
-    this.add.text(this.scale.width / 2, this.scale.height - 14, "WASD/flechas: mover · E: interactuar", {
-      color: "#ffffff", fontSize: "10px", backgroundColor: "#00000070",
-    }).setOrigin(0.5, 1).setPadding(3).setScrollFactor(0).setDepth(1000);
-  }
+  private controlHint(): void { /* ayuda en pantalla: irá en el HUD (no se zoomea) */ }
 
   private async startIntro(): Promise<void> {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     body.enable = false;
     this.player.setVelocity(0, 0);
-    const hint = this.add.text(this.scale.width / 2, 8, "ESC: saltear escena", {
-      color: "#ffffff", fontSize: "10px", backgroundColor: "#00000080",
-    }).setOrigin(0.5, 0).setPadding(3).setScrollFactor(0).setDepth(1000);
 
     const tv = this.cvt(560, 520);
     const center = this.cvt(490, 470);
     await this.cutscene.play(introCap1(this.player, tv, center));
 
-    hint.destroy();
     body.enable = true;
     body.reset(this.player.x, this.player.y);
-    this.controlHint();
   }
 
   update(): void {
