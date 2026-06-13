@@ -15,7 +15,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setCollideWorldBounds(true);
-    (this.body as Phaser.Physics.Arcade.Body).setCircle(12);
+    // Cuerpo chico a la altura de los pies (el sprite real mide ~38x64).
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setSize(18, 14);
+    body.setOffset(10, 48);
   }
 
   /** keys: objeto con estados booleanos de input. */

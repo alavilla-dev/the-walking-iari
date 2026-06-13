@@ -51,81 +51,6 @@ const PAL: Palette = {
   k: 0x1a1a24, // fondo retrato
 };
 
-const IARA = {
-  down: [
-    "................",
-    "................",
-    ".....hHHHh......",
-    "....hHHHHHh.....",
-    "....hHSSSHh.....",
-    "....HSSSSSH.....",
-    "....HSESESH.....",
-    "....HSSSSSH.....",
-    ".....SSSSS......",
-    "...BBBBBBBBB....",
-    "..BBBBBBBBBBB...",
-    "..BSBBBBBBBSB...",
-    "..BBBBBBBBBBB...",
-    "...PPPPPPPPP....",
-    "...PPPP.PPPP....",
-    "...OO.....OO....",
-  ],
-  up: [
-    "................",
-    "................",
-    ".....hHHHh......",
-    "....hHHHHHh.....",
-    "....HHHHHHH.....",
-    "....HHHHHHH.....",
-    "....HHHHHHH.....",
-    "....HHHHHHH.....",
-    ".....HHHHH......",
-    "...BBBBBBBBB....",
-    "..BBBBBBBBBBB...",
-    "..BSBBBBBBBSB...",
-    "..BBBBBBBBBBB...",
-    "...PPPPPPPPP....",
-    "...PPPP.PPPP....",
-    "...OO.....OO....",
-  ],
-  left: [
-    "................",
-    "................",
-    ".....hHHHh......",
-    "....hHHHHHh.....",
-    "...SSSHHHHh.....",
-    "...SESHHHHH.....",
-    "...SSSHHHHH.....",
-    "....SSHHHHH.....",
-    ".....SHHHH......",
-    "...BBBBBBBBB....",
-    "..BBBBBBBBBBB...",
-    "..BSBBBBBBBSB...",
-    "..BBBBBBBBBBB...",
-    "...PPPPPPPPP....",
-    "...PPPP.PPPP....",
-    "...OO.....OO....",
-  ],
-  right: [
-    "................",
-    "................",
-    ".....hHHHh......",
-    "....hHHHHHh.....",
-    ".....hHHHSSS....",
-    ".....HHHHSES....",
-    ".....HHHHSSS....",
-    ".....HHHHSS.....",
-    "......HHHHS.....",
-    "...BBBBBBBBB....",
-    "..BBBBBBBBBBB...",
-    "..BSBBBBBBBSB...",
-    "..BBBBBBBBBBB...",
-    "...PPPPPPPPP....",
-    "...PPPP.PPPP....",
-    "...OO.....OO....",
-  ],
-};
-
 const ZOMBIE = [
   "................",
   "................",
@@ -181,12 +106,7 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   g.fillStyle(0x6a6a7c, 1).fillRect(0, 24, TILE, 1); // brillo del zócalo
   g.generateTexture("tile_wall", TILE, TILE);
 
-  // --- Iara (4 direcciones), pixel-art 16x16 @2px = 32x32 ---
-  for (const dir of ["down", "up", "left", "right"] as const) {
-    g.clear();
-    drawPixels(g, IARA[dir], PAL, 2);
-    g.generateTexture(`player_${dir}`, 32, 32);
-  }
+  // Iara ahora usa los sprites reales (public/iara_*.png), cargados en Preload.
 
   // --- Zombie ---
   g.clear();
@@ -198,11 +118,7 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   drawPixels(g, CAT, PAL, 2);
   g.generateTexture("cat", 24, 24);
 
-  // --- Retrato de Iara (48x48): fondo + cara grande ---
-  g.clear();
-  g.fillStyle(PAL.k, 1).fillRect(0, 0, 48, 48);
-  drawPixels(g, IARA.down, PAL, 3, 0, 4);
-  g.generateTexture("portrait_iara", 48, 48);
+  // Iara y su retrato ahora usan los sprites reales (public/iara_*.png, portrait_iara.png).
 
   g.destroy();
 }
