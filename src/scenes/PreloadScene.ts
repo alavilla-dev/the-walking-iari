@@ -17,6 +17,9 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image("player_right", "iara_right.png");
     // Retrato real de Iara para el HUD.
     this.load.image("portrait_iara", "portrait_iara.png");
+    // Pisos del tileset LimeZu (recortes 16x16).
+    this.load.image("floor_wood", "tiles/floor_wood.png");
+    this.load.image("floor_tile", "tiles/floor_tile.png");
     // Cuando tengamos audio real: this.load.audio(...) acá.
   }
   create(): void {

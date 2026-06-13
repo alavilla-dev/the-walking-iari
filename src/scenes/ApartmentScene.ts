@@ -7,14 +7,14 @@ import { SaveSystem } from "../systems/SaveSystem";
 import { Sfx } from "../systems/Sfx";
 import { Cutscene } from "../systems/Cutscene";
 import { introCap1 } from "./cutscenes/introCap1";
-import type { SaveState, DialogueScript } from "../types";
+import type { SaveState } from "../types";
 import type { HudInfo } from "./GameHost";
 import type { HudScene } from "./HudScene";
 
-// Tamaño del fondo real del depto (recorte de ref-depto.jpg).
-const BG_W = 1125;
-const BG_H = 830;
-// Poner en true para ver las cajas de colisión (rojo) sobre el arte.
+// Grilla del depto: tiles LimeZu 16px renderizados a 32px (2x).
+const TILE = 32;
+const MAP_W = 20;
+const MAP_H = 15;
 const DEBUG_COLLIDERS = false;
 
 interface Interactable {
@@ -27,7 +27,6 @@ export class ApartmentScene extends Phaser.Scene {
   private interactables: Interactable[] = [];
   private cutscene = new Cutscene(this);
   private stepTimer = 0;
-  private S = 1; private ox = 0; private oy = 0;
   private keys!: {
     up: Phaser.Input.Keyboard.Key; down: Phaser.Input.Keyboard.Key;
     left: Phaser.Input.Keyboard.Key; right: Phaser.Input.Keyboard.Key;
@@ -46,6 +45,10 @@ export class ApartmentScene extends Phaser.Scene {
     return { name: "Iara", gender: "F", place: "Depto. Hogar", subtitle: "Morón — Buenos Aires" };
   }
 
+  // Centro de una celda en píxeles.
+  private cx(col: number): number { return col * TILE + TILE / 2; }
+  private cy(row: number): number { return row * TILE + TILE / 2; }
+
   create(): void {
     this.interactables = [];
     this.cutscene = new Cutscene(this);
@@ -53,21 +56,15 @@ export class ApartmentScene extends Phaser.Scene {
     this.ps = this.progression.psMax();
     this.registerStateEvents();
 
-    // Fondo real del departamento, escalado para verse entero (contain).
-    const W = this.scale.width, H = this.scale.height;
-    this.S = Math.min(W / BG_W, H / BG_H);
-    this.ox = (W - BG_W * this.S) / 2;
-    this.oy = (H - BG_H * this.S) / 2;
     this.cameras.main.setBackgroundColor("#0b0a0d");
-    this.add.image(this.ox, this.oy, "apartment_bg").setOrigin(0, 0).setScale(this.S).setDepth(-100);
+    this.physics.world.setBounds(0, 0, MAP_W * TILE, MAP_H * TILE);
 
-    this.physics.world.setBounds(this.ox, this.oy, BG_W * this.S, BG_H * this.S);
+    this.buildFloors();
     this.walls = this.physics.add.staticGroup();
     this.buildColliders();
 
-    // Iara arranca en el hall (donde estaba el personaje del arte).
-    const start = this.cvt(575, 455);
-    this.player = new Player(this, start.x, start.y);
+    // Iara arranca en el hall.
+    this.player = new Player(this, this.cx(10), this.cy(9));
     this.player.setDepth(10);
     this.physics.add.collider(this.player, this.walls);
 
@@ -87,115 +84,55 @@ export class ApartmentScene extends Phaser.Scene {
 
     this.buildInteractions();
 
-    // Intro cinematográfica del Cap. 1 (salteable con ESC).
-    this.startIntro();
-  }
-
-  private async startIntro(): Promise<void> {
-    const body = this.player.body as Phaser.Physics.Arcade.Body;
-    body.enable = false;
-    this.player.setVelocity(0, 0);
-
-    const hint = this.add.text(this.scale.width / 2, 8, "ESC: saltear escena", {
-      color: "#ffffff", fontSize: "10px", backgroundColor: "#00000080",
-    }).setOrigin(0.5, 0).setPadding(3).setScrollFactor(0).setDepth(160);
-
-    const tv = this.cvt(720, 560);
-    const center = this.cvt(575, 455);
-    await this.cutscene.play(introCap1(this.player, tv, center));
-
-    hint.destroy();
-    body.enable = true;
-    body.reset(this.player.x, this.player.y);
-
-    // Pista de control al recuperar el mando.
-    this.add.text(this.scale.width / 2, this.scale.height - 14, "WASD/flechas: mover · E: interactuar", {
-      color: "#ffffff", fontSize: "10px", backgroundColor: "#00000070",
-    }).setOrigin(0.5, 1).setPadding(3).setScrollFactor(0).setDepth(140);
-  }
-
-  update(): void {
-    if (this.cutscene.active) return;
-
-    const cursors = this.input.keyboard!.createCursorKeys();
-    this.player.handleInput({
-      up: this.keys.up.isDown || cursors.up.isDown,
-      down: this.keys.down.isDown || cursors.down.isDown,
-      left: this.keys.left.isDown || cursors.left.isDown,
-      right: this.keys.right.isDown || cursors.right.isDown,
-      sprint: this.keys.sprint.isDown,
-    });
-
-    const body = this.player.body as Phaser.Physics.Arcade.Body;
-    if (body.velocity.length() > 12) {
-      this.stepTimer -= this.game.loop.delta;
-      if (this.stepTimer <= 0) {
-        Sfx.get().footstep();
-        this.stepTimer = this.keys.sprint.isDown ? 220 : 320;
-      }
+    // En #apt (atajo de dev) se saltea la intro para ver/jugar directo.
+    const skipIntro = typeof window !== "undefined" && window.location.hash === "#apt";
+    if (skipIntro) {
+      this.add.text(this.scale.width / 2, this.scale.height - 14, "WASD/flechas: mover · E: interactuar", {
+        color: "#ffffff", fontSize: "10px", backgroundColor: "#00000070",
+      }).setOrigin(0.5, 1).setPadding(3).setScrollFactor(0).setDepth(140);
     } else {
-      this.stepTimer = 0;
+      this.startIntro();
     }
   }
 
-  // ---------- Colisiones (en coords del arte 1125x830) ----------
+  // ---------- Pisos (tileset LimeZu) ----------
 
-  private cvt(ix: number, iy: number): { x: number; y: number } {
-    return { x: ix * this.S + this.ox, y: iy * this.S + this.oy };
+  private buildFloors(): void {
+    // Madera en todo el interior.
+    this.add.tileSprite(0, 0, MAP_W * TILE, MAP_H * TILE, "floor_wood")
+      .setOrigin(0, 0).setTileScale(2, 2).setDepth(-100);
+    // Baldosa en baño (cols 1-5, filas 1-3) y cocina (cols 13-18, filas 5-8).
+    this.tileFloor(1, 1, 5, 3);
+    this.tileFloor(13, 5, 6, 4);
   }
 
-  /** Agrega una caja de colisión estática a partir de coords del arte. */
-  private wall(ix: number, iy: number, iw: number, ih: number): void {
-    const x = ix * this.S + this.ox, y = iy * this.S + this.oy;
-    const w = iw * this.S, h = ih * this.S;
+  private tileFloor(col: number, row: number, wCols: number, hRows: number): void {
+    this.add.tileSprite(col * TILE, row * TILE, wCols * TILE, hRows * TILE, "floor_tile")
+      .setOrigin(0, 0).setTileScale(2, 2).setDepth(-99);
+  }
+
+  // ---------- Colisiones (por ahora solo límites; paredes/muebles en próximos pasos) ----------
+
+  private wall(col: number, row: number, wCols = 1, hRows = 1): void {
+    const x = col * TILE, y = row * TILE, w = wCols * TILE, h = hRows * TILE;
     const zone = this.add.zone(x, y, w, h).setOrigin(0, 0);
     this.physics.add.existing(zone, true);
     this.walls.add(zone);
-    if (DEBUG_COLLIDERS) {
-      this.add.rectangle(x, y, w, h, 0xff0000, 0.35).setOrigin(0, 0).setDepth(500);
-    }
+    if (DEBUG_COLLIDERS) this.add.rectangle(x, y, w, h, 0xff0000, 0.35).setOrigin(0, 0).setDepth(500);
   }
 
   private buildColliders(): void {
-    // Perímetro
-    this.wall(20, 25, 1085, 16);    // arriba
-    this.wall(20, 795, 1085, 22);   // abajo
-    this.wall(20, 25, 16, 790);     // izquierda
-    this.wall(1090, 25, 16, 790);   // derecha
-
-    // Tabiques internos (con huecos de puerta)
-    this.wall(322, 40, 14, 175);    // izq-rooms | hall (arriba)
-    this.wall(322, 300, 14, 185);   // izq-rooms | hall (abajo) — hueco en el medio
-    this.wall(642, 40, 14, 160);    // hall | derecha (arriba)
-    this.wall(642, 280, 14, 205);   // hall | derecha (abajo) — hueco
-    this.wall(36, 470, 250, 14);    // upper | living (izq)
-    this.wall(360, 470, 110, 14);   // upper | living (centro-izq)
-    this.wall(700, 470, 390, 14);   // upper | living (der) — hueco central para pasar
-
-    // Muebles sólidos
-    this.wall(40, 50, 280, 95);     // bañera + zona baño
-    this.wall(45, 285, 290, 175);   // cama
-    this.wall(650, 95, 100, 150);   // heladera
-    this.wall(650, 150, 445, 85);   // mesada + cocina (arriba)
-    this.wall(1010, 150, 85, 200);  // mesada (derecha)
-    this.wall(55, 595, 265, 190);   // mesa de comedor
-    this.wall(540, 545, 215, 165);  // sofá
-    this.wall(815, 600, 280, 150);  // mueble + TV
+    // Paso 2 (próximo): paredes y división de ambientes. Por ahora, solo borde.
+    this.wall(0, 0, MAP_W, 1);
+    this.wall(0, MAP_H - 1, MAP_W, 1);
+    this.wall(0, 0, 1, MAP_H);
+    this.wall(MAP_W - 1, 0, 1, MAP_H);
   }
 
   // ---------- Interacciones ----------
 
   private buildInteractions(): void {
-    const add = (ix: number, iy: number, run: () => void) => {
-      const p = this.cvt(ix, iy);
-      this.interactables.push({ x: p.x, y: p.y, radius: 46, run });
-    };
-    add(190, 370, () => this.say("Iara", "La cama tendida. Ale me pidió que descanse... como si pudiera."));
-    add(660, 620, () => this.say("Marfil", "Mrrrau. (Marfil ronronea en el sillón.)"));
-    add(950, 650, () => this.say("Iara", "La tele pasa las noticias. Algo raro en el centro de la ciudad."));
-    add(850, 200, () => this.say("Iara", "La heladera llena. Ale hizo las compras antes de salir."));
-    add(180, 690, () => this.say("Iara", "Flores frescas en la mesa. Un detalle de él."));
-    add(575, 790, () => this.say("Iara", "La puerta. Todavía es de noche... mejor esperar a que vuelva Ale."));
+    // Se completan al colocar los muebles (Paso 3).
   }
 
   private tryInteract(): void {
@@ -211,10 +148,48 @@ export class ApartmentScene extends Phaser.Scene {
     best?.run();
   }
 
-  private say(speaker: string, text: string): void {
-    const hud = this.scene.get("Hud") as HudScene;
-    const script: DialogueScript = { n: { id: "n", speaker, text, next: null } };
-    if (!hud.dialogue.visible) hud.dialogue.start(script, "n");
+  // ---------- Intro ----------
+
+  private async startIntro(): Promise<void> {
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    body.enable = false;
+    this.player.setVelocity(0, 0);
+    const hint = this.add.text(this.scale.width / 2, 8, "ESC: saltear escena", {
+      color: "#ffffff", fontSize: "10px", backgroundColor: "#00000080",
+    }).setOrigin(0.5, 0).setPadding(3).setScrollFactor(0).setDepth(160);
+
+    const tv = { x: this.cx(15), y: this.cy(11) };
+    const center = { x: this.cx(10), y: this.cy(9) };
+    await this.cutscene.play(introCap1(this.player, tv, center));
+
+    hint.destroy();
+    body.enable = true;
+    body.reset(this.player.x, this.player.y);
+    this.add.text(this.scale.width / 2, this.scale.height - 14, "WASD/flechas: mover · E: interactuar", {
+      color: "#ffffff", fontSize: "10px", backgroundColor: "#00000070",
+    }).setOrigin(0.5, 1).setPadding(3).setScrollFactor(0).setDepth(140);
+  }
+
+  update(): void {
+    if (this.cutscene.active) return;
+    const cursors = this.input.keyboard!.createCursorKeys();
+    this.player.handleInput({
+      up: this.keys.up.isDown || cursors.up.isDown,
+      down: this.keys.down.isDown || cursors.down.isDown,
+      left: this.keys.left.isDown || cursors.left.isDown,
+      right: this.keys.right.isDown || cursors.right.isDown,
+      sprint: this.keys.sprint.isDown,
+    });
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    if (body.velocity.length() > 12) {
+      this.stepTimer -= this.game.loop.delta;
+      if (this.stepTimer <= 0) {
+        Sfx.get().footstep();
+        this.stepTimer = this.keys.sprint.isDown ? 220 : 320;
+      }
+    } else {
+      this.stepTimer = 0;
+    }
   }
 
   // ---------- Estado ----------
