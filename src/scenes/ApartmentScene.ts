@@ -99,7 +99,17 @@ export class ApartmentScene extends Phaser.Scene {
     const zone = this.add.zone(x, y, w, h).setOrigin(0, 0);
     this.physics.add.existing(zone, true);
     this.walls.add(zone);
+    // Capa de profundidad: redibuja esta porción del render por delante de Iara
+    // cuando ella está "detrás" (sus pies por encima de la base de esta pared/mueble).
+    this.occluder(ix, iy, iw, ih);
     if (DEBUG_COLLIDERS) this.add.rectangle(x, y, w, h, 0xff0000, 0.35).setOrigin(0, 0).setDepth(500);
+  }
+
+  /** Recorte del render colocado a una profundidad igual a su base (para y-sorting con Iara). */
+  private occluder(ix: number, iy: number, iw: number, ih: number): void {
+    const img = this.add.image(this.ox, this.oy, "apartment_bg").setOrigin(0, 0).setScale(this.S);
+    img.setCrop(ix, iy, iw, ih);
+    img.setDepth(this.oy + (iy + ih) * this.S);
   }
 
   private buildColliders(): void {
@@ -188,6 +198,8 @@ export class ApartmentScene extends Phaser.Scene {
   }
 
   update(): void {
+    // Profundidad por la Y de los pies (y-sorting con paredes/muebles).
+    this.player.setDepth(this.player.y + this.player.displayHeight * 0.4);
     if (this.cutscene.active) return;
     const cursors = this.input.keyboard!.createCursorKeys();
     this.player.handleInput({
