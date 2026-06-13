@@ -20,6 +20,11 @@ export class PreloadScene extends Phaser.Scene {
     // Pisos del tileset LimeZu (recortes 16x16).
     this.load.image("floor_wood", "tiles/floor_wood.png");
     this.load.image("floor_tile", "tiles/floor_tile.png");
+    // Muebles del depto (recortados del tileset LimeZu).
+    for (const f of ["bed", "sofa", "table", "chair", "counter", "tv",
+      "plant", "plant2", "rug", "window", "door", "nightstand"]) {
+      this.load.image(`f_${f}`, `tiles/f/${f}.png`);
+    }
     // Cuando tengamos audio real: this.load.audio(...) acá.
   }
   create(): void {

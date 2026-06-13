@@ -7,7 +7,7 @@ import { SaveSystem } from "../systems/SaveSystem";
 import { Sfx } from "../systems/Sfx";
 import { Cutscene } from "../systems/Cutscene";
 import { introCap1 } from "./cutscenes/introCap1";
-import type { SaveState } from "../types";
+import type { SaveState, DialogueScript } from "../types";
 import type { HudInfo } from "./GameHost";
 import type { HudScene } from "./HudScene";
 
@@ -61,10 +61,11 @@ export class ApartmentScene extends Phaser.Scene {
 
     this.buildFloors();
     this.walls = this.physics.add.staticGroup();
-    this.buildColliders();
+    this.buildWalls();
+    this.buildFurniture();
 
     // Iara arranca en el hall.
-    this.player = new Player(this, this.cx(10), this.cy(9));
+    this.player = new Player(this, this.cx(9), this.cy(7));
     this.player.setDepth(10);
     this.physics.add.collider(this.player, this.walls);
 
@@ -98,41 +99,118 @@ export class ApartmentScene extends Phaser.Scene {
   // ---------- Pisos (tileset LimeZu) ----------
 
   private buildFloors(): void {
-    // Madera en todo el interior.
-    this.add.tileSprite(0, 0, MAP_W * TILE, MAP_H * TILE, "floor_wood")
+    // Piso claro (baldosa) en TODO el depto — como la referencia / depto real (blanco).
+    this.add.tileSprite(0, 0, MAP_W * TILE, MAP_H * TILE, "floor_tile")
       .setOrigin(0, 0).setTileScale(2, 2).setDepth(-100);
-    // Baldosa en baño (cols 1-5, filas 1-3) y cocina (cols 13-18, filas 5-8).
-    this.tileFloor(1, 1, 5, 3);
-    this.tileFloor(13, 5, 6, 4);
   }
 
-  private tileFloor(col: number, row: number, wCols: number, hRows: number): void {
-    this.add.tileSprite(col * TILE, row * TILE, wCols * TILE, hRows * TILE, "floor_tile")
-      .setOrigin(0, 0).setTileScale(2, 2).setDepth(-99);
-  }
-
-  // ---------- Colisiones (por ahora solo límites; paredes/muebles en próximos pasos) ----------
+  // ---------- Paredes ----------
 
   private wall(col: number, row: number, wCols = 1, hRows = 1): void {
     const x = col * TILE, y = row * TILE, w = wCols * TILE, h = hRows * TILE;
+    // Visual de pared (tan con remate oscuro arriba, para que se lea como pared).
+    this.add.rectangle(x, y, w, h, 0xc2ad84).setOrigin(0, 0).setDepth(-50);
+    this.add.rectangle(x, y, w, 6, 0x8a7350).setOrigin(0, 0).setDepth(-50);
+    this.add.rectangle(x, y, w, 2, 0x2e2418).setOrigin(0, 0).setDepth(-50);
+    // Colisión.
     const zone = this.add.zone(x, y, w, h).setOrigin(0, 0);
     this.physics.add.existing(zone, true);
     this.walls.add(zone);
-    if (DEBUG_COLLIDERS) this.add.rectangle(x, y, w, h, 0xff0000, 0.35).setOrigin(0, 0).setDepth(500);
+    if (DEBUG_COLLIDERS) this.add.rectangle(x, y, w, h, 0xff0000, 0.3).setOrigin(0, 0).setDepth(500);
   }
 
-  private buildColliders(): void {
-    // Paso 2 (próximo): paredes y división de ambientes. Por ahora, solo borde.
+  private buildWalls(): void {
+    // Perímetro (hueco de puerta abajo-centro en cols 9-10).
     this.wall(0, 0, MAP_W, 1);
-    this.wall(0, MAP_H - 1, MAP_W, 1);
-    this.wall(0, 0, 1, MAP_H);
-    this.wall(MAP_W - 1, 0, 1, MAP_H);
+    this.wall(0, MAP_H - 1, 9, 1);
+    this.wall(11, MAP_H - 1, 9, 1);
+    this.wall(0, 1, 1, MAP_H - 1);
+    this.wall(MAP_W - 1, 1, 1, MAP_H - 1);
+    // Tabiques verticales (izq-rooms | hall | der-rooms) con puertas en filas 6-7.
+    this.wall(6, 1, 1, 5); this.wall(6, 8, 1, 2);
+    this.wall(12, 1, 1, 5); this.wall(12, 8, 1, 2);
+    // Baño | dormitorio (fila 5, hueco col 3).
+    this.wall(1, 5, 2, 1); this.wall(4, 5, 2, 1);
+    // Balcón | cocina (fila 5, hueco col 15).
+    this.wall(13, 5, 2, 1); this.wall(16, 5, 3, 1);
+    // Habitaciones de arriba | living (fila 9; huecos col 3, cols 9-10, col 16).
+    this.wall(1, 9, 2, 1); this.wall(4, 9, 5, 1); this.wall(11, 9, 5, 1); this.wall(17, 9, 2, 1);
+  }
+
+  // ---------- Muebles ----------
+
+  /** Coloca un mueble (escala 2x). Devuelve la imagen. */
+  private furn(key: string, col: number, row: number, solid = false): Phaser.GameObjects.Image {
+    const x = col * TILE, y = row * TILE;
+    const img = this.add.image(x, y, key).setOrigin(0, 0).setScale(2);
+    img.setDepth(y + img.displayHeight - 8);
+    if (solid) {
+      const m = 6;
+      const zx = x + m, zy = y + img.displayHeight * 0.35;
+      const zw = img.displayWidth - m * 2, zh = img.displayHeight * 0.6;
+      const zone = this.add.zone(zx, zy, zw, zh).setOrigin(0, 0);
+      this.physics.add.existing(zone, true);
+      this.walls.add(zone);
+      if (DEBUG_COLLIDERS) this.add.rectangle(zx, zy, zw, zh, 0x00ff00, 0.3).setOrigin(0, 0).setDepth(500);
+    }
+    return img;
+  }
+
+  private buildFurniture(): void {
+    // --- BAÑO (cols 1-5, filas 1-4) ---
+    this.furn("f_nightstand", 1.3, 1.4, true);   // lavatorio (aprox.)
+    this.furn("f_plant2", 4, 1.2);
+
+    // --- DORMITORIO (cols 1-5, filas 6-9) ---
+    this.furn("f_bed", 1.8, 5.7, true);
+    this.furn("f_nightstand", 4.2, 5.8, true);
+    this.furn("f_plant", 1, 7.6);
+
+    // --- BALCÓN (cols 13-18, filas 1-4) ---
+    this.furn("f_window", 14, 0.7);
+    this.furn("f_plant", 17, 2);
+
+    // --- COCINA (cols 13-18, filas 5-9) ---
+    this.furn("f_counter", 13, 5.4, true);
+    this.furn("f_plant2", 18, 8);
+
+    // --- LIVING / COMEDOR (filas 10-13) ---
+    // Comedor (izq)
+    this.furn("f_rug", 1.8, 10.2);
+    this.furn("f_table", 1.6, 10.3, true);
+    this.furn("f_chair", 1, 10.2);
+    this.furn("f_chair", 4.1, 10.2);
+    this.furn("f_chair", 1, 12);
+    this.furn("f_chair", 4.1, 12);
+    // Estar (der)
+    this.furn("f_sofa", 12.5, 10.6, true);
+    this.furn("f_sofa", 12.5, 11.6, true);
+    this.add.image(15 * TILE, 12 * TILE, "cat").setOrigin(0, 0).setScale(1.5).setDepth(12 * TILE + 40); // Marfil
+    this.furn("f_tv", 16.8, 10.8, true);
+    this.furn("f_plant", 11, 10);
+    this.furn("f_plant", 18, 10);
+    // Entrada
+    this.furn("f_door", 9.3, 13.2);
   }
 
   // ---------- Interacciones ----------
 
   private buildInteractions(): void {
-    // Se completan al colocar los muebles (Paso 3).
+    const add = (col: number, row: number, run: () => void) => {
+      this.interactables.push({ x: col * TILE, y: row * TILE, radius: 52, run });
+    };
+    add(3, 7, () => this.say("Iara", "La cama. Ale me pidió que descanse... como si pudiera."));
+    add(15, 13, () => this.say("Marfil", "Mrrrau. (Marfil ronronea en el sillón.)"));
+    add(17, 12, () => this.say("Iara", "La tele pasa las noticias. Algo raro en el centro de la ciudad."));
+    add(15, 7, () => this.say("Iara", "La heladera llena. Ale hizo las compras antes de salir."));
+    add(3, 11, () => this.say("Iara", "Flores frescas en la mesa. Un detalle de él."));
+    add(10, 13, () => this.say("Iara", "La puerta. Todavía es de noche... mejor esperar a que vuelva Ale."));
+  }
+
+  private say(speaker: string, text: string): void {
+    const hud = this.scene.get("Hud") as HudScene;
+    const script: DialogueScript = { n: { id: "n", speaker, text, next: null } };
+    if (!hud.dialogue.visible) hud.dialogue.start(script, "n");
   }
 
   private tryInteract(): void {
@@ -158,8 +236,8 @@ export class ApartmentScene extends Phaser.Scene {
       color: "#ffffff", fontSize: "10px", backgroundColor: "#00000080",
     }).setOrigin(0.5, 0).setPadding(3).setScrollFactor(0).setDepth(160);
 
-    const tv = { x: this.cx(15), y: this.cy(11) };
-    const center = { x: this.cx(10), y: this.cy(9) };
+    const tv = { x: this.cx(14), y: this.cy(12) };
+    const center = { x: this.cx(9), y: this.cy(7) };
     await this.cutscene.play(introCap1(this.player, tv, center));
 
     hint.destroy();
