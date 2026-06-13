@@ -77,6 +77,28 @@ export class Sfx {
     setTimeout(() => this.tone(660, 0.12, "square", 0.18), 70);
   }
 
+  /** Maullido (barrido de tono). high=agudo (Marfil), grave (Venus). */
+  meow(high = true): void {
+    const ctx = this.ensure();
+    if (!ctx || !this.master) return;
+    this.unlock();
+    const base = high ? 620 : 380;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = "sawtooth";
+    const t = ctx.currentTime;
+    osc.frequency.setValueAtTime(base * 0.8, t);
+    osc.frequency.linearRampToValueAtTime(base * 1.25, t + 0.12);
+    osc.frequency.linearRampToValueAtTime(base * 0.85, t + 0.32);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.14, t + 0.06);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.36);
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass"; lp.frequency.value = 1600;
+    osc.connect(lp).connect(g).connect(this.master);
+    osc.start(); osc.stop(t + 0.38);
+  }
+
   /** Paso sobre el piso (ruido corto y grave). */
   footstep(): void {
     const ctx = this.ensure();

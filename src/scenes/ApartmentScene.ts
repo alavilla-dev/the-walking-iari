@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { SAVE_VERSION } from "../config";
 import { Player } from "../entities/Player";
+import { Cat } from "../entities/Cat";
 import { ProgressionModel } from "../systems/ProgressionModel";
 import { InventoryModel } from "../systems/InventoryModel";
 import { SaveSystem } from "../systems/SaveSystem";
@@ -19,6 +20,7 @@ interface Interactable { x: number; y: number; radius: number; run: () => void; 
 
 export class ApartmentScene extends Phaser.Scene {
   private player!: Player;
+  private cats: Cat[] = [];
   private walls!: Phaser.Physics.Arcade.StaticGroup;
   private interactables: Interactable[] = [];
   private cutscene = new Cutscene(this);
@@ -79,6 +81,13 @@ export class ApartmentScene extends Phaser.Scene {
     this.cameras.main.setBounds(this.ox, this.oy, this.bgW * this.S, this.bgH * this.S);
     this.cameras.main.setZoom(1.7);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+
+    // Gatos: Marfil (blanco, frenético) y Venus (negro, tranquilo).
+    this.cats = [
+      new Cat(this, this.cvt(520, 800).x, this.cvt(520, 800).y, "cat_marfil", { frenetic: true, high: true }),
+      new Cat(this, this.cvt(800, 880).x, this.cvt(800, 880).y, "cat_venus", { frenetic: false, high: false }),
+    ];
+    for (const c of this.cats) this.physics.add.collider(c, this.walls);
 
     this.inventory.add("photo_pareja", 1);
     this.inventory.add("llave_depto", 1);
@@ -150,7 +159,6 @@ export class ApartmentScene extends Phaser.Scene {
     add(1080, 160, () => this.say("Iara", "El baño. Una ducha no me vendría mal."));
     add(1050, 500, () => this.say("Iara", "La heladera llena. Ale hizo las compras antes de salir."));
     add(260, 880, () => this.say("Iara", "Flores frescas en la mesa. Un detalle de él."));
-    add(580, 860, () => this.say("Marfil", "Mrrrau. (Marfil ronronea en el sillón.)"));
     add(625, 1170, () => this.say("Iara", "La puerta. Todavía es de noche... mejor esperar a que vuelva Ale."));
   }
 
@@ -189,9 +197,12 @@ export class ApartmentScene extends Phaser.Scene {
     body.reset(this.player.x, this.player.y);
   }
 
-  update(): void {
+  update(time: number): void {
     // Profundidad de Iara según la Y de sus pies (y-sorting con la capa frontal).
     this.player.setDepth(this.player.y + this.player.displayHeight * 0.42);
+    // Gatos (deambulan y maúllan al acercarse).
+    const pv = new Phaser.Math.Vector2(this.player.x, this.player.y);
+    for (const c of this.cats) c.tick(time, pv);
     if (this.cutscene.active) return;
     const cursors = this.input.keyboard!.createCursorKeys();
     this.player.handleInput({

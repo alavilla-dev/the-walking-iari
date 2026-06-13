@@ -113,10 +113,14 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   drawPixels(g, ZOMBIE, PAL, 2);
   g.generateTexture("zombie", 32, 32);
 
-  // --- Gato ---
+  // --- Gatos: Marfil (blanco) y Venus (negro, ojos verdes) ---
   g.clear();
   drawPixels(g, CAT, PAL, 2);
-  g.generateTexture("cat", 24, 24);
+  g.generateTexture("cat_marfil", 24, 24);
+  const venusPal: Palette = { w: 0x2b2b30, s: 0x17171b, e: 0x8ad04a, n: 0xff9fb0 };
+  g.clear();
+  drawPixels(g, CAT, venusPal, 2);
+  g.generateTexture("cat_venus", 24, 24);
 
   // Iara y su retrato ahora usan los sprites reales (public/iara_*.png, portrait_iara.png).
 
