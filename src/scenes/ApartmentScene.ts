@@ -11,9 +11,10 @@ import type { SaveState, DialogueScript } from "../types";
 import type { HudInfo } from "./GameHost";
 import type { HudScene } from "./HudScene";
 
-// Render real del depto (recorte de ref-depto.jpg, sin HUD ni personaje pegados).
-const BG_W = 1125;
-const BG_H = 830;
+// Render del depto Casullo 856 (1024x1024). Colisiones y profundidad salen de los mapas de Ale.
+const BG_W = 1024;
+const BG_H = 1024;
+const STRIP = 8; // alto (px del arte) de cada franja de profundidad
 const DEBUG_COLLIDERS = false;
 
 interface Interactable { x: number; y: number; radius: number; run: () => void; }
@@ -38,7 +39,7 @@ export class ApartmentScene extends Phaser.Scene {
   constructor() { super("Apartment"); }
 
   get hudInfo(): HudInfo {
-    return { name: "Iara", gender: "F", place: "Depto. Hogar", subtitle: "Morón — Buenos Aires" };
+    return { name: "Iara", gender: "F", place: "Depto. Casullo 856", subtitle: "Morón — Buenos Aires" };
   }
 
   private cvt(ix: number, iy: number): { x: number; y: number } {
@@ -52,22 +53,24 @@ export class ApartmentScene extends Phaser.Scene {
     this.ps = this.progression.psMax();
     this.registerStateEvents();
 
-    // Fondo real del depto, escalado para verse entero.
     const W = this.scale.width, H = this.scale.height;
     this.S = Math.min(W / BG_W, H / BG_H);
     this.ox = (W - BG_W * this.S) / 2;
     this.oy = (H - BG_H * this.S) / 2;
     this.cameras.main.setBackgroundColor("#0b0a0d");
+
+    // Fondo (render completo).
     this.add.image(this.ox, this.oy, "apartment_bg").setOrigin(0, 0).setScale(this.S).setDepth(-100);
+    // Capa de profundidad: franjas del frente (paredes/muebles) ordenadas por su Y.
+    this.buildForeground();
 
     this.physics.world.setBounds(this.ox, this.oy, BG_W * this.S, BG_H * this.S);
     this.walls = this.physics.add.staticGroup();
     this.buildColliders();
 
-    const start = this.cvt(575, 470);
+    const start = this.cvt(490, 470);
     this.player = new Player(this, start.x, start.y);
-    this.player.setScale(1.35);
-    this.player.setDepth(10);
+    this.player.setScale(this.S * 2.6);
     this.physics.add.collider(this.player, this.walls);
 
     this.inventory.add("photo_pareja", 1);
@@ -91,51 +94,29 @@ export class ApartmentScene extends Phaser.Scene {
     else this.startIntro();
   }
 
-  // ---------- Colisiones (coords del arte 1125x830) ----------
+  // ---------- Profundidad (capa frontal en franjas, y-sorting) ----------
 
-  private wall(ix: number, iy: number, iw: number, ih: number): void {
-    const x = ix * this.S + this.ox, y = iy * this.S + this.oy;
-    const w = iw * this.S, h = ih * this.S;
-    const zone = this.add.zone(x, y, w, h).setOrigin(0, 0);
-    this.physics.add.existing(zone, true);
-    this.walls.add(zone);
-    // Capa de profundidad: redibuja esta porción del render por delante de Iara
-    // cuando ella está "detrás" (sus pies por encima de la base de esta pared/mueble).
-    this.occluder(ix, iy, iw, ih);
-    if (DEBUG_COLLIDERS) this.add.rectangle(x, y, w, h, 0xff0000, 0.35).setOrigin(0, 0).setDepth(500);
+  private buildForeground(): void {
+    for (let sy = 0; sy < BG_H; sy += STRIP) {
+      const h = Math.min(STRIP, BG_H - sy);
+      const img = this.add.image(this.ox, this.oy, "apartment_fg").setOrigin(0, 0).setScale(this.S);
+      img.setCrop(0, sy, BG_W, h);
+      img.setDepth(this.oy + (sy + h) * this.S); // profundidad = base de la franja
+    }
   }
 
-  /** Recorte del render colocado a una profundidad igual a su base (para y-sorting con Iara). */
-  private occluder(ix: number, iy: number, iw: number, ih: number): void {
-    const img = this.add.image(this.ox, this.oy, "apartment_bg").setOrigin(0, 0).setScale(this.S);
-    img.setCrop(ix, iy, iw, ih);
-    img.setDepth(this.oy + (iy + ih) * this.S);
-  }
+  // ---------- Colisiones (desde el mapa de profundidad de Ale) ----------
 
   private buildColliders(): void {
-    // Perímetro de las habitaciones.
-    this.wall(20, 25, 1085, 16);
-    this.wall(20, 795, 1085, 24);
-    this.wall(20, 25, 16, 790);
-    this.wall(1088, 25, 16, 790);
-    // Tabique izq-rooms | hall (puertas: baño ~y195, dormitorio ~y390).
-    this.wall(312, 30, 16, 160); this.wall(312, 250, 16, 115); this.wall(312, 425, 16, 45);
-    // Tabique hall | derecha (puerta cocina ~y390; balcón abierto arriba).
-    this.wall(636, 30, 16, 335); this.wall(636, 430, 16, 40);
-    // Baño | dormitorio.
-    this.wall(20, 240, 292, 16);
-    // Balcón | cocina.
-    this.wall(640, 120, 450, 16);
-    // Habitaciones de arriba | living (hueco central del hall, x320-640).
-    this.wall(20, 463, 300, 16); this.wall(640, 463, 450, 16);
-    // Muebles sólidos.
-    this.wall(40, 45, 270, 90);     // bañera
-    this.wall(40, 290, 280, 165);   // cama
-    this.wall(650, 135, 445, 95);   // mesada cocina (arriba)
-    this.wall(1000, 135, 90, 220);  // mesada cocina (derecha)
-    this.wall(50, 580, 275, 200);   // mesa comedor
-    this.wall(535, 545, 225, 165);  // sofá
-    this.wall(815, 605, 275, 150);  // mueble TV
+    const rects = (this.cache.json.get("apartment_collision") as number[][]) || [];
+    for (const [ix, iy, iw, ih] of rects) {
+      const x = ix * this.S + this.ox, y = iy * this.S + this.oy;
+      const w = iw * this.S, h = ih * this.S;
+      const zone = this.add.zone(x, y, w, h).setOrigin(0, 0);
+      this.physics.add.existing(zone, true);
+      this.walls.add(zone);
+      if (DEBUG_COLLIDERS) this.add.rectangle(x, y, w, h, 0xff0000, 0.3).setOrigin(0, 0).setDepth(900);
+    }
   }
 
   // ---------- Interacciones ----------
@@ -143,14 +124,14 @@ export class ApartmentScene extends Phaser.Scene {
   private buildInteractions(): void {
     const add = (ix: number, iy: number, run: () => void) => {
       const p = this.cvt(ix, iy);
-      this.interactables.push({ x: p.x, y: p.y, radius: 46, run });
+      this.interactables.push({ x: p.x, y: p.y, radius: 60, run });
     };
-    add(185, 370, () => this.say("Iara", "La cama. Ale me pidió que descanse... como si pudiera."));
-    add(660, 620, () => this.say("Marfil", "Mrrrau. (Marfil ronronea en el sillón.)"));
-    add(950, 660, () => this.say("Iara", "La tele pasa las noticias. Algo raro en el centro de la ciudad."));
-    add(850, 190, () => this.say("Iara", "La heladera llena. Ale hizo las compras antes de salir."));
-    add(180, 690, () => this.say("Iara", "Flores frescas en la mesa. Un detalle de él."));
-    add(575, 800, () => this.say("Iara", "La puerta. Todavía es de noche... mejor esperar a que vuelva Ale."));
+    add(150, 150, () => this.say("Iara", "La cama. Ale me pidió que descanse... como si pudiera."));
+    add(520, 470, () => this.say("Marfil", "Mrrrau. (Marfil ronronea en el sillón.)"));
+    add(880, 480, () => this.say("Iara", "La tele pasa las noticias. Algo raro en el centro de la ciudad."));
+    add(790, 180, () => this.say("Iara", "La heladera llena. Ale hizo las compras antes de salir."));
+    add(140, 410, () => this.say("Iara", "Flores frescas en la mesa. Un detalle de él."));
+    add(475, 790, () => this.say("Iara", "La puerta. Todavía es de noche... mejor esperar a que vuelva Ale."));
   }
 
   private tryInteract(): void {
@@ -176,7 +157,7 @@ export class ApartmentScene extends Phaser.Scene {
   private controlHint(): void {
     this.add.text(this.scale.width / 2, this.scale.height - 14, "WASD/flechas: mover · E: interactuar", {
       color: "#ffffff", fontSize: "10px", backgroundColor: "#00000070",
-    }).setOrigin(0.5, 1).setPadding(3).setScrollFactor(0).setDepth(140);
+    }).setOrigin(0.5, 1).setPadding(3).setScrollFactor(0).setDepth(1000);
   }
 
   private async startIntro(): Promise<void> {
@@ -185,10 +166,10 @@ export class ApartmentScene extends Phaser.Scene {
     this.player.setVelocity(0, 0);
     const hint = this.add.text(this.scale.width / 2, 8, "ESC: saltear escena", {
       color: "#ffffff", fontSize: "10px", backgroundColor: "#00000080",
-    }).setOrigin(0.5, 0).setPadding(3).setScrollFactor(0).setDepth(160);
+    }).setOrigin(0.5, 0).setPadding(3).setScrollFactor(0).setDepth(1000);
 
-    const tv = this.cvt(700, 560);
-    const center = this.cvt(575, 470);
+    const tv = this.cvt(560, 520);
+    const center = this.cvt(490, 470);
     await this.cutscene.play(introCap1(this.player, tv, center));
 
     hint.destroy();
@@ -198,8 +179,8 @@ export class ApartmentScene extends Phaser.Scene {
   }
 
   update(): void {
-    // Profundidad por la Y de los pies (y-sorting con paredes/muebles).
-    this.player.setDepth(this.player.y + this.player.displayHeight * 0.4);
+    // Profundidad de Iara según la Y de sus pies (y-sorting con la capa frontal).
+    this.player.setDepth(this.player.y + this.player.displayHeight * 0.42);
     if (this.cutscene.active) return;
     const cursors = this.input.keyboard!.createCursorKeys();
     this.player.handleInput({

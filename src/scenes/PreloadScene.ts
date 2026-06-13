@@ -8,8 +8,10 @@ export class PreloadScene extends Phaser.Scene {
   preload(): void {
     // Arte de la pantalla de título (recorte del diseño image.png).
     this.load.image("title_bg", "title_bg.png");
-    // Fondo real del departamento (recorte de ref-depto.jpg, sin HUD ni personaje).
-    this.load.image("apartment_bg", "apartment_bg.png");
+    // Departamento Casullo 856: render + capa de profundidad + colisiones (de los mapas de Ale).
+    this.load.image("apartment_bg", "tiles/casullo856/render.png");
+    this.load.image("apartment_fg", "tiles/casullo856/fg.png");
+    this.load.json("apartment_collision", "tiles/casullo856/collision.json");
     // Sprites reales de Iara (recortados de la hoja de personajes, 4 direcciones).
     this.load.image("player_down", "iara_down.png");
     this.load.image("player_up", "iara_up.png");
