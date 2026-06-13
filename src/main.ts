@@ -13,7 +13,13 @@ new Phaser.Game({
   width: 20 * TILE,
   height: 15 * TILE,
   pixelArt: true,
+  roundPixels: true,
   backgroundColor: "#0d0d12",
+  scale: {
+    // Escala para llenar la ventana manteniendo proporción y nitidez.
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+  },
   physics: {
     default: "arcade",
     arcade: { debug: false },
